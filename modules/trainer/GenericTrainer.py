@@ -684,6 +684,13 @@ class GenericTrainer(BaseTrainer):
                         prior_model_prediction = prior_model_output_data['predicted'].to(dtype=model_output_data['target'].dtype)
                         model_output_data['target'][prior_pred_indices] = prior_model_prediction[prior_pred_indices]
                         model_output_data['prior_target'] = prior_model_prediction
+                    elif True and self.config.guidance_scale > 1.0:
+                        with self.model_setup.prior_model(self.model, self.config), torch.no_grad():
+                            prior_scaled = self.model_setup.predict(self.model, batch, self.config, train_progress)['predicted'].float()
+                            prior = self.model_setup.predict(self.model, batch, self.config, train_progress, guidance=1.0)['predicted'].float()
+                        model_output_data = self.model_setup.predict(self.model, batch, self.config, train_progress)
+                        downscaled = prior + (model_output_data['predicted'].float() - prior_scaled) / self.config.guidance_scale
+                        model_output_data['predicted'] = downscaled.to(model_output_data['predicted'].dtype)
                     else:
                         model_output_data = self.model_setup.predict(self.model, batch, self.config, train_progress)
 

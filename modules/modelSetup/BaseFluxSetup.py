@@ -198,6 +198,7 @@ class BaseFluxSetup(
             train_progress: TrainProgress,
             *,
             deterministic: bool = False,
+            guidance = None,
     ) -> dict:
         with model.autocast_context:
             batch_seed = 0 if deterministic else train_progress.global_step
@@ -261,7 +262,10 @@ class BaseFluxSetup(
                 latent_input = scaled_noisy_latent_image
 
             if model.transformer.config.guidance_embeds:
-                guidance = torch.tensor([config.prior.guidance_scale], device=self.train_device)
+                if guidance is None:
+                    guidance = torch.tensor([config.prior.guidance_scale], device=self.train_device)
+                else:
+                    guidance = torch.tensor([guidance], device=self.train_device)
                 guidance = guidance.expand(latent_input.shape[0])
             else:
                 guidance = None
@@ -285,7 +289,6 @@ class BaseFluxSetup(
                 latent_input.shape[2],
                 latent_input.shape[3],
             )
-
             packed_predicted_flow = model.transformer(
                 hidden_states=packed_latent_input.to(dtype=model.train_dtype.torch_dtype()),
                 timestep=timestep / 1000,
