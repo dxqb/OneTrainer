@@ -153,7 +153,7 @@ function run_python {
 }
 
 function run_pip {
-    run_python -m pip "$@"
+    run_python -m pip --verbose "$@"
 }
 
 function run_venv {
@@ -282,7 +282,7 @@ function run_python_in_conda_env {
 }
 
 function run_pip_in_conda_env {
-    run_python_in_conda_env -m pip "$@"
+    run_python_in_conda_env -m pip --verbose "$@"
 }
 
 # Checks if the user hasn't requested Venv instead, and if Conda exists.

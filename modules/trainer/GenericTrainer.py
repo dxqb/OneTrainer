@@ -36,6 +36,7 @@ from modules.util.TrainProgress import TrainProgress
 import torch
 from torch import Tensor, nn
 from torch.nn import Parameter
+from torch.nn.attention import flex_attention
 from torch.utils.hooks import RemovableHandle
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms.functional import pil_to_tensor
@@ -44,6 +45,11 @@ import huggingface_hub
 from requests.exceptions import ConnectionError
 from tqdm import tqdm
 
+# Compile flex_attention in-place due to not being done by diffusers
+flex_attention.flex_attention = torch.compile(flex_attention.flex_attention, mode="max-autotune-no-cudagraphs", dynamic=True, fullgraph=True)
+
+# Compile create_block_mask for minor speedup + VRAM reduction for attention masks
+#flex_attention.create_block_mask = torch.compile(flex_attention.create_block_mask, mode="max-autotune-no-cudagraphs", dynamic=True, fullgraph=True)
 
 class GenericTrainer(BaseTrainer):
     model_loader: BaseModelLoader
