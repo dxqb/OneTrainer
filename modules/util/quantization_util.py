@@ -77,7 +77,6 @@ def dequantize(q: Tensor, scale: float | Tensor, compute_dtype: torch.dtype) -> 
 
 from modules.module.quantized.LinearFp8 import LinearFp8
 from modules.module.quantized.LinearGGUFA8 import LinearGGUFA8
-from modules.module.quantized.LinearSVD import BaseLinearSVD, make_svd_linear
 from modules.module.quantized.LinearW8A8 import LinearW8A8
 
 
@@ -171,15 +170,15 @@ def replace_linear_with_quantized_layers(
         copy_parameters: bool = False,
 ):
     if dtype.quantize_nf4():
-        construct_fn = make_svd_linear(LinearNf4) if dtype.quantize_svd() else LinearNf4
+        construct_fn = LinearNf4
     elif dtype.quantize_int8():
-        construct_fn = partial(make_svd_linear(bnb.nn.Linear8bitLt) if dtype.quantize_svd() else bnb.nn.Linear8bitLt, has_fp16_weights=False)
+        construct_fn = partial(bnb.nn.Linear8bitLt, has_fp16_weights=False)
     elif dtype.quantize_fp8():
-        construct_fn = make_svd_linear(LinearFp8) if dtype.quantize_svd() else LinearFp8
+        construct_fn = LinearFp8
     elif dtype.quantize_intW8A8():
-        construct_fn = partial(make_svd_linear(LinearW8A8) if dtype.quantize_svd() else LinearW8A8, dtype=torch.int8, compute_dtype=torch.bfloat16)
+        construct_fn = partial(LinearW8A8, dtype=torch.int8, compute_dtype=torch.bfloat16)
     elif dtype.quantize_fpW8A8():
-        construct_fn = partial(make_svd_linear(LinearW8A8) if dtype.quantize_svd() else LinearW8A8, dtype=torch.float8_e4m3fn, compute_dtype=torch.bfloat16)
+        construct_fn = partial(LinearW8A8, dtype=torch.float8_e4m3fn, compute_dtype=torch.bfloat16)
     elif dtype == DataType.GGUF_A8_INT:
         construct_fn = partial(LinearGGUFA8, dtype=torch.int8, compute_dtype=torch.bfloat16)
     elif dtype == DataType.GGUF_A8_FLOAT:
@@ -210,9 +209,6 @@ def is_quantized_parameter(
         module: nn.Module,
         parameter_name: str,
 ) -> bool:
-    if isinstance(module, BaseLinearSVD):
-        if parameter_name in ["svd_up", "svd_down"]:
-            return True
     if bnb is not None:
         if isinstance(module, LinearNf4):
             return parameter_name in [
@@ -240,7 +236,7 @@ def quantize_layers(module: nn.Module, device: torch.device, train_dtype: DataTy
         for child_module in tqdm(child_modules, desc="Quantizing model weights", total=len(child_modules), delay=5, smoothing=0.1):
             if isinstance(child_module, QuantizedModuleMixin):
                 child_module.compute_dtype = train_dtype.torch_dtype()
-                child_module.quantize(device=device, cache_dir=cache_dir, svd_dtype=config.svd_dtype.torch_dtype(), rank=config.svd_rank)
+                child_module.quantize(device=device)
 
 
 def get_unquantized_weight(module: nn.Linear, dtype: torch.dtype, device: torch.device) -> Tensor:
@@ -267,9 +263,6 @@ def get_offload_tensors(module: nn.Module) -> list[torch.Tensor]:
         tensors += [module.weight]
     if isinstance(module, nn.Linear) and module.bias is not None:
         tensors += [module.bias]
-    if isinstance(module, BaseLinearSVD):
-        tensors += [module.svd_up]
-        tensors += [module.svd_down]
 
     return tensors
 
