@@ -68,7 +68,6 @@ class OFTRotationModule(nn.Module):
 
     def _pytorch_skew_symmetric(self, vec, block_size):
         batch_size = vec.shape[0]
-
         matrix = torch.zeros(batch_size, block_size, block_size, device=vec.device, dtype=vec.dtype)
 
         #the following two lines are equivalent to "matrix[:, self.rows, self.cols] = vec",
@@ -77,7 +76,6 @@ class OFTRotationModule(nn.Module):
         matrix = matrix.index_put((batch_idx, self.rows, self.cols), vec)
 
         matrix = matrix - matrix.transpose(-2, -1)
-
         return matrix
 
     def _pytorch_skew_symmetric_inv(self, matrix, block_size):
