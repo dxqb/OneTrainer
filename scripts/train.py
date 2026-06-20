@@ -26,6 +26,14 @@ def main():
     with open(args.config_path, "r") as f:
         train_config.from_dict(json.load(f), migrate=args.preset_path is None)
 
+    for config_value in args.config_values or []:
+        key, _, value = config_value.partition("=")
+        *parent_keys, leaf_key = key.split(".")
+        target = train_config
+        for parent_key in parent_keys:
+            target = getattr(target, parent_key)
+        target.from_dict({leaf_key: value}, migrate=False)
+
     try:
         with open("secrets.json" if args.secrets_path is None else args.secrets_path, "r") as f:
             secrets_dict=json.load(f)
