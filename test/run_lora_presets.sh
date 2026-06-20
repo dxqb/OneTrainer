@@ -31,7 +31,7 @@ for preset in "${presets[@]}"; do
     name=$(basename "$preset" .json)
     logfile="$LOG_DIR/${name#\#}.log"
     echo "=== $name ===" | tee "$logfile"
-    if ./run-cmd.sh train --preset-path "$preset" --config-path "$CONFIG" 2>&1 | tee -a "$logfile"; then
+    if ./run-cmd.sh train --preset-path "$preset" --config-path "$CONFIG" 2>&1 | tee -a "$logfile" && ! grep -q "Error during sampling" "$logfile"; then
         echo "OK: $name" | tee -a "$ERROR_LOG"
     else
         echo "FAILED: $name" | tee -a "$ERROR_LOG"
