@@ -1,9 +1,6 @@
 import argparse
 import logging
-import os
 import sys
-
-COMFYUI_PATH = os.environ.get("COMFYUI_PATH", "/home/claude/SwarmUI/dlbackend/ComfyUI")
 
 # Loader to use, and (for "split") the comfy.sd.CLIPType to pass to load_clip.
 # clip_type is None where Comfy auto-detects the text encoder from its weights
@@ -36,6 +33,7 @@ class RecordingHandler(logging.Handler):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("comfyui_path", help="Path to the ComfyUI checkout (for importing the comfy package)")
     parser.add_argument("model_type", choices=MODEL_CONFIG.keys())
     parser.add_argument("lora_path")
     parser.add_argument(
@@ -46,7 +44,7 @@ def main():
 
     loader, clip_type_name = MODEL_CONFIG[args.model_type]
 
-    sys.path.insert(0, COMFYUI_PATH)
+    sys.path.insert(0, args.comfyui_path)
 
     import comfy.cli_args
     comfy.cli_args.args.cpu = True

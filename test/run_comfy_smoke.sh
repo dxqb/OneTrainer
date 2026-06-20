@@ -1,10 +1,14 @@
 #!/bin/bash
 set -o pipefail
 
-source "$(dirname "$0")/lora_presets_common.sh"
-
-COMFYUI_PATH="${COMFYUI_PATH:-/home/claude/SwarmUI/dlbackend/ComfyUI}"
+if [ -z "$1" ]; then
+    echo "Usage: $0 <comfyui-path>" >&2
+    exit 1
+fi
+COMFYUI_PATH="$1"
 COMFYUI_PYTHON="$COMFYUI_PATH/venv/bin/python3"
+
+source "$(dirname "$0")/lora_presets_common.sh"
 
 failed=0
 
@@ -33,7 +37,7 @@ for preset in "${presets[@]}"; do
         continue
     fi
 
-    if ! "$COMFYUI_PYTHON" test/smoke_load_comfy.py "$model_type" "$lora_path" $comfy_files 2>&1 | tee -a "$logfile"; then
+    if ! "$COMFYUI_PYTHON" test/smoke_load_comfy.py "$COMFYUI_PATH" "$model_type" "$lora_path" $comfy_files 2>&1 | tee -a "$logfile"; then
         echo "FAILED (comfy load): $name" | tee -a "$ERROR_LOG"
         failed=1
         continue
