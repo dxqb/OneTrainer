@@ -32,6 +32,8 @@ def main():
         target = train_config
         for parent_key in parent_keys:
             target = getattr(target, parent_key)
+        if target.types[leaf_key] is bool:
+            value = value.lower() in ("true", "1", "yes")
         target.from_dict({leaf_key: value}, migrate=False)
 
     try:
